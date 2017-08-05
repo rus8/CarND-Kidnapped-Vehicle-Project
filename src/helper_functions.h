@@ -65,6 +65,12 @@ inline double * getError(double gt_x, double gt_y, double gt_theta, double pf_x,
 	return error;
 }
 
+double AngleNorm(double angle) {
+	while (angle > M_PI) angle -= 2. * M_PI;
+	while (angle < -M_PI) angle += 2. * M_PI;
+	return angle;
+}
+
 /* Reads map data from a file.
  * @param filename Name of file containing map data.
  * @output True if opening and reading file was successful
