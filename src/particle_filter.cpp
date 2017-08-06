@@ -25,7 +25,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
-	num_particles = 7;
+	num_particles = 10;
 
 	default_random_engine gen;
 	// Create normal distributions to sample particles
@@ -125,6 +125,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     weights.clear();
 
     for (int i = 0; i < num_particles; i++){
+        particles[i].weight = 1.0;
+
         std::vector<LandmarkObs> close_landmarks;
         //select possible landmarks
         for (auto landmark : map_landmarks.landmark_list){
@@ -135,15 +137,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         }
 
         //transform observations
-        std::vector<LandmarkObs> transformed_observations;
-        /*for (auto& observ : observations){
-            x = observ.x;
-            y = observ.y;
-            observ.x = particles[i].x + cos(particles[i].theta) * x -
-                                        sin(particles[i].theta) * y;
-            observ.y = particles[i].y + sin(particles[i].theta) * x +
-                                        cos(particles[i].theta) * y;
-        }*/
+//        std::vector<LandmarkObs> transformed_observations;
 
         for (auto observ: observations) {
             x = particles[i].x + cos(particles[i].theta) * observ.x -
@@ -151,30 +145,20 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             y = particles[i].y + sin(particles[i].theta) * observ.x +
                        cos(particles[i].theta) * observ.y;
 
+            LandmarkObs closest_landmark;
             double minDist = std::numeric_limits<float>::max();
             for (auto landmark: close_landmarks) {
                 distance = dist(x, y, landmark.x, landmark.y);
                 if (distance < minDist) {
                     minDist = distance;
                     id = landmark.id;
+                    closest_landmark = landmark;
                 }
             }
-            transformed_observations.push_back(LandmarkObs{id, x, y});
-        }
-
-//        dataAssociation(close_landmarks, observations, sensor_range);
-        //weights calculation
-        particles[i].weight = 1.0;
-        for (auto observ : transformed_observations){
-            for (auto landmark : close_landmarks){
-                if (observ.id == landmark.id) {
-                    expon = (-0.5) * ((observ.x - landmark.x) * (observ.x - landmark.x) / var_x +
-                                    (observ.y - landmark.y) * (observ.y - landmark.y) / var_y);
-                    prob = coef * exp(expon);
-                    particles[i].weight *= prob;
-                    break;
-                }
-            }
+            expon = (-0.5) * ((x - closest_landmark.x) * (x - closest_landmark.x) / var_x +
+                            (y - closest_landmark.y) * (y - closest_landmark.y) / var_y);
+            prob = coef * exp(expon);
+            particles[i].weight *= prob;
         }
         weights.push_back(particles[i].weight);
     }
@@ -224,6 +208,7 @@ string ParticleFilter::getAssociations(Particle best)
     s = s.substr(0, s.length()-1);  // get rid of the trailing space
     return s;
 }
+
 string ParticleFilter::getSenseX(Particle best)
 {
 	vector<double> v = best.sense_x;
@@ -233,6 +218,7 @@ string ParticleFilter::getSenseX(Particle best)
     s = s.substr(0, s.length()-1);  // get rid of the trailing space
     return s;
 }
+
 string ParticleFilter::getSenseY(Particle best)
 {
 	vector<double> v = best.sense_y;
